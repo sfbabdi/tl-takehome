@@ -1,6 +1,6 @@
 xformLog.py - Transform log from Google Spreadsheet
 
-Data export are found in data/ folder.
+Data export are found in `data/` folder.
 
 Sample output:
 ```
