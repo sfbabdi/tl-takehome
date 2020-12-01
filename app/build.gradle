@@ -109,7 +109,10 @@ afterEvaluate {
     .each { task -> dockerPushAllTask.dependsOn(task) }
 }
 
-def testCoverageExcludeClasses = []
+def testCoverageExcludeClasses = [
+  'com.sfbabdi.tltakehome.configuration.*',
+  'com.sfbabdi.tltakehome.App',
+]
 
 jacocoTestCoverageVerification {
   violationRules {
