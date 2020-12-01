@@ -1,1 +1,12 @@
-v-env
+**/v-env
+
+*.swp
+
+.DS_Store
+.gradle/
+out/
+build/
+*.iml
+.idea/
+
+

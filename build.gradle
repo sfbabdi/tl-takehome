@@ -1,0 +1,170 @@
+import com.sfbabdi.tltakehome.gradle.version.VersionNumberPlugin
+
+buildscript {
+  ext {
+    springBootVersion = '2.4.0'
+    // Needs to match up with version in Spring Boot
+    micrometerVersion = '1.6.0'
+    springCloudVersion = 'Hoxton.SR9'
+  }
+  repositories {
+    mavenCentral()
+    maven { url 'https://repo.spring.io/milestone' }
+    maven { url 'https://plugins.gradle.org/m2/' }
+  }
+  dependencies {
+    classpath "org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}"
+    classpath 'gradle.plugin.com.github.spotbugs:spotbugs-gradle-plugin:2.0.0'
+    classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.7.1'
+    classpath 'gradle.plugin.com.palantir.gradle.docker:gradle-docker:0.22.1'
+    classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.10'
+  }
+  configurations.all {
+    resolutionStrategy {
+      // Palantir gradle-docker compiles against guava 18.0.
+      // Must force guava version to latest so that spotbugs will work.
+      force 'com.google.guava:guava:28.0-jre'
+    }
+  }
+}
+
+apply plugin: 'org.sonarqube'
+apply plugin: VersionNumberPlugin
+
+subprojects {
+  apply plugin: 'java'
+  apply plugin: 'jacoco'
+  apply plugin: 'checkstyle'
+  apply plugin: 'com.github.spotbugs'
+  apply plugin: 'io.spring.dependency-management'
+
+  dependencyManagement {
+    imports {
+      mavenBom "org.springframework.boot:spring-boot-dependencies:${springBootVersion}"
+      mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+
+    dependencies {
+      dependencySet(group: 'io.micrometer', version: micrometerVersion) {
+        entry 'micrometer-registry-cloudwatch'
+        entry 'micrometer-registry-statsd'
+      }
+      dependency 'org.projectlombok:lombok:1.16.18'
+      dependency 'com.google.guava:guava:28.0-jre'
+      dependency 'org.mockito:mockito-core:2.8.9'
+      dependency 'org.powermock:powermock-api-mockito2:1.7.3'
+      dependency 'org.powermock:powermock-module-junit4:1.7.3'
+
+      dependency 'org.apache.commons:commons-lang3:3.0'
+
+      // Explictly including httpclient to address 
+      // https://github.com/aws/aws-sdk-java/issues/1919
+      dependency 'org.apache.httpcomponents:httpclient:4.5.10'
+      dependency 'com.amazonaws:aws-java-sdk-core:1.11.659'
+      dependency 'com.amazonaws:aws-lambda-java-core:1.2.0'
+      dependency 'com.amazonaws:aws-lambda-java-events:2.2.7'
+      dependency 'com.amazonaws:aws-java-sdk-lambda:1.11.659'
+      dependency 'com.amazonaws:aws-java-sdk-dynamodb:1.11.659'
+      dependency 'com.amazonaws:aws-java-sdk-sns:1.11.659'
+      dependency 'org.apache.logging.log4j:log4j-slf4j-impl:2.11.1'
+      dependency 'com.amazonaws:aws-lambda-java-log4j2:1.1.0'
+      dependency 'com.google.protobuf:protobuf-java:3.9.2'
+      dependency 'org.apache.kafka:kafka-clients:2.2.1'
+
+      dependency 'com.google.inject:guice:4.2.2'
+
+      dependency 'io.cucumber:cucumber-java:5.1.0'
+      dependency 'io.cucumber:cucumber-junit:5.1.0'
+    }
+  }
+
+  sonarqube {
+    properties {
+      property "sonar.projectName", "${project.group}:${project.name}"
+      property "sonar.projectVersion", "${project.version}"
+      property "sonar.sources", "src/main"
+      property "sonar.tests", "src/test"
+    }
+  }
+
+  repositories {
+    mavenCentral()
+    maven { url 'https://repo.spring.io/libs-milestone' }
+  }
+
+  sourceCompatibility = 1.8
+  targetCompatibility = 1.8
+
+  spotbugs {
+    toolVersion = '3.1.12'
+    sourceSets = [ sourceSets.main ]
+    ignoreFailures = false
+    reportsDir = file("$project.rootProject.buildDir/spotbugsReport")
+    effort = "max"
+    showProgress = true
+    reportLevel = "high"
+  }
+
+  tasks.withType(com.github.spotbugs.SpotBugsTask) {
+    reports {
+      xml.enabled false 
+      html.enabled true
+    }
+  }
+
+  checkstyle {
+    toolVersion = '8.23'
+    configFile = file("$project.rootProject.projectDir/config/checkstyle/google_checks.xml")
+    maxWarnings = 0
+    ignoreFailures = false
+  }
+
+  tasks.withType(Checkstyle) {
+    reports {
+      xml.enabled false
+      html.enabled true
+    }
+  }
+
+  jacoco {
+    toolVersion = "0.8.1"
+  }
+
+  jacocoTestReport {
+    reports {
+      xml.enabled false
+      csv.enabled false
+      html.destination file("${buildDir}/jacocoHtml")
+    }
+  }
+
+  jacocoTestCoverageVerification {
+    dependsOn jacocoTestReport
+  }
+
+  check {
+    dependsOn jacocoTestCoverageVerification
+  }
+}
+
+apply plugin: 'idea'
+
+idea {
+  module {
+    excludeDirs = [
+          file('.gradle'),
+          file('.idea'),
+          file('gradlew'),
+          file('gradlew.bat'),
+          file('gradle'),
+          file('build'),
+    ]
+  }
+}
+
+sonarqube {
+  properties {
+    property "sonar.sourceEncoding", "UTF-8"
+  }
+}
+
