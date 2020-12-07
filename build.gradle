@@ -17,7 +17,6 @@ buildscript {
     classpath 'gradle.plugin.com.github.spotbugs:spotbugs-gradle-plugin:2.0.0'
     classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.7.1'
     classpath 'gradle.plugin.com.palantir.gradle.docker:gradle-docker:0.22.1'
-    classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.10'
   }
   configurations.all {
     resolutionStrategy {
@@ -51,27 +50,15 @@ subprojects {
       }
       dependency 'org.projectlombok:lombok:1.16.18'
       dependency 'com.google.guava:guava:28.0-jre'
+      dependency 'org.apache.commons:commons-lang3:3.0'
+      dependency 'org.apache.logging.log4j:log4j-slf4j-impl:2.11.1'
+      dependency 'org.projectreactor:reactor-spring:1.0.1.RELEASE'
+
       dependency 'org.mockito:mockito-core:2.8.9'
       dependency 'org.powermock:powermock-api-mockito2:1.7.3'
       dependency 'org.powermock:powermock-module-junit4:1.7.3'
-
-      dependency 'org.apache.commons:commons-lang3:3.0'
-
-      // Explictly including httpclient to address 
-      // https://github.com/aws/aws-sdk-java/issues/1919
-      dependency 'org.apache.httpcomponents:httpclient:4.5.10'
-      dependency 'com.amazonaws:aws-java-sdk-core:1.11.659'
-      dependency 'com.amazonaws:aws-lambda-java-core:1.2.0'
-      dependency 'com.amazonaws:aws-lambda-java-events:2.2.7'
-      dependency 'com.amazonaws:aws-java-sdk-lambda:1.11.659'
-      dependency 'com.amazonaws:aws-java-sdk-dynamodb:1.11.659'
-      dependency 'com.amazonaws:aws-java-sdk-sns:1.11.659'
-      dependency 'org.apache.logging.log4j:log4j-slf4j-impl:2.11.1'
-      dependency 'com.amazonaws:aws-lambda-java-log4j2:1.1.0'
-      dependency 'com.google.protobuf:protobuf-java:3.9.2'
-      dependency 'org.apache.kafka:kafka-clients:2.2.1'
-
-      dependency 'com.google.inject:guice:4.2.2'
+      dependency 'com.squareup.okhttp3:okhttp:4.9.0'
+      dependency 'com.squareup.okhttp3:mockwebserver:4.9.0'
 
       dependency 'io.cucumber:cucumber-java:5.1.0'
       dependency 'io.cucumber:cucumber-junit:5.1.0'
