@@ -48,7 +48,7 @@ public class ApplicationConfiguration {
     @Bean
     @Scope(value = ConfigurableBeanFactory.SCOPE_SINGLETON)
     public ThreadPoolExecutor configureThreadPool() {
-        return (ThreadPoolExecutor)Executors.newFixedThreadPool(40);
+        return (ThreadPoolExecutor)Executors.newFixedThreadPool(100);
     }
 
     @Bean

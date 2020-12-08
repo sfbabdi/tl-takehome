@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ConfigurableApplicationContext;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -21,10 +22,12 @@ import java.util.concurrent.ThreadPoolExecutor;
 @SpringBootApplication
 public class App implements CommandLineRunner {
 
+    private final ConfigurableApplicationContext context;
     private final ThreadPoolExecutor executor;
     private final CompletionService<PixelCheckResult> completionService;
     private final PixelPreparer preparer;
     private final PixelChecker checker;
+    private final PixelCheckReporter reporter;
 
     public static void main(String[] args) {
         SpringApplication.run(App.class, args);
@@ -33,8 +36,9 @@ public class App implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         if (args.length < 1) {
-            log.error("No input filename found, exiting.");
-            System.exit(1);
+            log.error("No input filename found in arg, done.");
+            context.close();
+            return;
         }
         String inputFile = args[0];
         log.info("Processing input file: {}", inputFile);
@@ -44,7 +48,8 @@ public class App implements CommandLineRunner {
             pixelCheckEntries = preparer.processFile(inputFile);
         } catch (IOException e) {
             log.error("Cannot process file: {}", inputFile, e);
-            System.exit(1);
+            context.close();
+            return;
         }
 
         assert pixelCheckEntries != null;
@@ -55,16 +60,21 @@ public class App implements CommandLineRunner {
         });
 
         int received = 0;
+        int logInterval = 1000;
         while (received < pixelCheckEntries.size()) {
             Future<PixelCheckResult> resultFuture = completionService.take();
             pixelCheckResults.add(resultFuture.get());
-            log.info("Executor poolSize:{}, queueSize:{}", executor.getPoolSize(), executor.getQueue().size());
+            if (received % logInterval == 0) {
+                log.info("Executor queueSize:{}", executor.getQueue().size());
+            }
             received++;
         }
 
-        ConsolePixelCheckReporter reporter =
-                new ConsolePixelCheckReporter(pixelCheckResults, preparer.getMetrics(), checker.getMetrics());
-        reporter.report();
+        reporter.reportFailedDetail(pixelCheckResults);
+        reporter.reportPrepareMetrics(preparer.getMetrics());
+        reporter.reportCheckMetrics(checker.getMetrics());
+
+        context.close();
     }
 }
 

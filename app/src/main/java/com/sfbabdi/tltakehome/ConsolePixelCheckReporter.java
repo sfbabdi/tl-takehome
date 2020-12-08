@@ -1,8 +1,8 @@
 package com.sfbabdi.tltakehome;
 
-import com.sfbabdi.tltakehome.model.PixelCheckResult;
 import com.sfbabdi.tltakehome.metrics.PixelCheckMetrics;
 import com.sfbabdi.tltakehome.metrics.PixelPreparerMetrics;
+import com.sfbabdi.tltakehome.model.PixelCheckResult;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -10,20 +10,11 @@ import java.util.List;
 
 @Slf4j
 @AllArgsConstructor
-public class ConsolePixelCheckReporter {
+public class ConsolePixelCheckReporter implements PixelCheckReporter {
 
-    private final List<PixelCheckResult> results;
-    private final PixelPreparerMetrics pixelPreparerMetrics;
-    private final PixelCheckMetrics pixelCheckMetrics;
-
-    public void report() {
-        log.info(reportPrepareMetrics());
-        log.info(reportCheckMetrics());
-        log.info(reportFailedDetail());
-    }
-
-    private String reportPrepareMetrics() {
-        return "Input preparation metric:\n" +
+    @Override
+    public void reportPrepareMetrics(PixelPreparerMetrics pixelPreparerMetrics) {
+        String s = "Input preparation metric:\n" +
                 "Total tacticId found: " +
                 (int) (pixelPreparerMetrics.getTotalProcessed().count()) +
                 '\n' +
@@ -36,10 +27,12 @@ public class ConsolePixelCheckReporter {
                 "Number of tacticId with missing impression pixel URLs: " +
                 (int) (pixelPreparerMetrics.getNoImpressionPixelCount().count()) +
                 '\n';
+        log.info(s);
     }
 
-    private String reportCheckMetrics() {
-        return "Pixel URL check metrics:\n" +
+    @Override
+    public void reportCheckMetrics(PixelCheckMetrics pixelCheckMetrics) {
+        String s = "Pixel URL check metrics:\n" +
                 "Total URL checked: " +
                 (int) (pixelCheckMetrics.getTotalCount().count()) +
                 '\n' +
@@ -52,28 +45,30 @@ public class ConsolePixelCheckReporter {
                 "Number of error while getting response: " +
                 (int) (pixelCheckMetrics.getErrorCount().count()) +
                 '\n';
+        log.info(s);
     }
 
-    private String reportFailedDetail() {
+    @Override
+    public void reportFailedDetail(List<PixelCheckResult> results) {
         StringBuilder errorDetail = new StringBuilder();
         StringBuilder failedDetail = new StringBuilder();
         results.forEach(r -> {
             if (r.getResultStatus() == PixelCheckResult.ResultStatus.ERROR) {
                 errorDetail.append("TacticId:");
                 errorDetail.append(r.getTacticId());
-                errorDetail.append(" URL:");
+                errorDetail.append(",URL:");
                 errorDetail.append(r.getUrl());
                 errorDetail.append('\n');
             } else if (r.getHttpCode().isError()) {
                 failedDetail.append("TacticId:");
                 failedDetail.append(r.getTacticId());
-                failedDetail.append(" HttpCode:");
+                failedDetail.append(",HttpCode:");
                 failedDetail.append(r.getHttpCode());
-                failedDetail.append(" URL:");
+                failedDetail.append(",URL:");
                 failedDetail.append(r.getUrl());
                 failedDetail.append('\n');
             }
         });
-        return "Failed Detail:\n" + failedDetail.toString() + '\n' + "Error Detail:\n" + errorDetail.toString() + '\n';
+        log.info("Failed Detail:\n" + failedDetail.toString() + '\n' + "Error Detail:\n" + errorDetail.toString() + '\n');
     }
 }
