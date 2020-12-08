@@ -1,0 +1,105 @@
+:toc:
+= TL Take Home
+
+== Overview
+This program:
+. Reads URLs from an input csv file
+. Sanitizes each URLs
+. Performs GET request on each sanitized URLs
+. Gives a report on return status code overview
+. Also gives a detailed report on URLs that failed the check
+
+:url-requirement: https://docs.google.com/document/d/17kyIvisSFRGiS1VA14LPImetcLAACQ4NkMXa2gvimaU
+For full detail on requirements, see {url-requirement}[requirement], prompt #4.
+
+== For Users
+=== Running the Application
+To run the program against supplied input file, run:
+[source,bash]
+----
+./gradlew :app:bootRun --args="${PROJ_ROOT}/app/src/test/resources/tactic.csv"
+----
+
+Sample output:
+[source,bash]
+----
+05:08:09.731 [restartedMain] INFO  com.sfbabdi.tltakehome.App:43 - Processing input file: /home/diqiu/3repo/tl-takehome/app/src/test/resources/tactic.csv
+05:08:11.770 [restartedMain] INFO  com.sfbabdi.tltakehome.App:67 - Executor queueSize:17641
+05:08:13.352 [restartedMain] INFO  com.sfbabdi.tltakehome.App:67 - Executor queueSize:16641
+05:08:14.594 [restartedMain] INFO  com.sfbabdi.tltakehome.App:67 - Executor queueSize:15640
+...
+05:09:08.378 [restartedMain] INFO  com.sfbabdi.tltakehome.App:67 - Executor queueSize:1641
+05:09:12.788 [restartedMain] INFO  com.sfbabdi.tltakehome.App:67 - Executor queueSize:641
+05:09:45.596 [restartedMain] INFO  com.sfbabdi.tltakehome.ConsolePixelCheckReporter:71 - Failed Detail:
+TacticId:336921,HttpCode:404 NOT_FOUND,URL:http://amp.mediaforge.com/link/sparta4490/3f209ca8-ef7f-11e5-847e-3bca27e6281b
+TacticId:337113,HttpCode:404 NOT_FOUND,URL:http://amp.mediaforge.com/link/polari4993/c76ac1a8-f135-11e5-88e4-13b07c93c565
+...
+TacticId:327036,HttpCode:500 INTERNAL_SERVER_ERROR,URL:https://api.choicestream.com/instr/crunch/apnxs/imp?au=909650461&cr=909650461&li=909650461&cp=909650461&uid=909650461&ecp=909650461&rp=909650461&bid1=909650461&pr=909650461&invs=909650461&pi=909650461&vid=909650461&sid=909650461&ip=909650461&pc=909650461&dc=909650461&city=909650461&st=909650461&ref=909650461&r=909650461
+TacticId:327610,HttpCode:500 INTERNAL_SERVER_ERROR,URL:https://api.choicestream.com/instr/crunch/apnxs/imp?au=-1116643774&cr=-1116643774&li=-1116643774&cp=-1116643774&uid=-1116643774&ecp=-1116643774&rp=-1116643774&bid1=-1116643774&pr=-1116643774&invs=-1116643774&pi=-1116643774&vid=-1116643774&sid=-1116643774&ip=-1116643774&pc=-1116643774&dc=-1116643774&city=-1116643774&st=-1116643774&ref=-1116643774&r=-1116643774
+
+Error Detail:
+TacticId:314925,URL:https://ohlone.vizu.com/a.gif?vzcid=19761&vzadid=triplelift&vzsid=accuen&ord=-980123172
+TacticId:334313,URL:https://gap.sp1.convertro.com/view/vt/v1/gap/1/cvo.gif?cvosrc=display.akqa.68543819&cvo_cid=9398102&cvo_pid=128302847&cvo_adid=300956079&cvo_crid=68543819
+TacticId:327784,URL:https://adfarm.mediaplex.com/ad/tr/24693-217020-26109-5?mpt=123803120&mpcs=bypass
+...
+TacticId:335199,URL:https://ads.bridgetrack.com/event/?type=-1&BTData=GbP.B.gAB6f.Cx.xW.cHxX.nQM.Ll43.E8.ip*.1.nB.BZv.E&r=-282868235
+TacticId:335390,URL:https://ads.bridgetrack.com/event/?type=-1&BTData=Gf8.B.gAB6f.Cx.xW.cHxV.m2R.LiQ1.E8.hke.1.nB.BZv.E&r=970994964
+TacticId:326596,URL:http://ads.pointroll.com/PortalServe/?pid=2691588J93120150903182726&pos=i&r=-984956114
+TacticId:326574,URL:https://ads.bridgetrack.com/event/?type=-1&BTData=Nqu.B.gAB4f.Cx.v5.bZe6.iBk.GH63.e!N.1.nB.BZv.E&r=-585538444
+
+
+05:09:45.648 [restartedMain] INFO  com.sfbabdi.tltakehome.ConsolePixelCheckReporter:29 - Input preparation metric:
+Total tacticId found: 24907
+Number of tacticId with valid impression pixel URLs: 17742
+Number of tacticId with invalid impression pixel URLs: 5
+Number of tacticId with missing impression pixel URLs: 7160
+
+05:09:45.648 [restartedMain] INFO  com.sfbabdi.tltakehome.ConsolePixelCheckReporter:47 - Pixel URL check metrics:
+Total URL checked: 17742
+Number of 2xx/3xx responses: 15855
+Number of 4xx/5xx responses: 487
+Number of error while getting response: 1400
+----
+
+== For the Judge
+=== Code Walkthrough
+* `App.run()` - main controller.
+* `PixelPreparer` - Read file, extracts URL and sanitize them.
+* `PixelChecker` - Checks URLs
+* `PixelCheckReporter` - Generate report.
+
+=== Implemntation Thoughts
+* `impression_pixel_json` field is really dirty. If this tool is to be used in 
+a real setting, then we need to improve pixel scraping from html. Adding more 
+manual clean up is going to be a lost fight from the start.
+* Stats are collected via micrometre. There are opportunities for integrating 
+with other services like cloudwatch to get a over time change. Might help 
+with observing long term trends of pixel health.
+* There are a few knobs left out that might be useful, such as WebClient 
+timeout, or number of concurrent pixel checking threads. They can easily be 
+added via spring's `@EnableConfigurationProperties` and ingest from env var.
+* Report can be made fancier. That's why there's an interface for future 
+expansion.
+* Unit test coverage is missing for `PixelCheckReporter`. We should probably 
+test it if it's production code.
+* `build.gradle` files have some unnecessary stuff in there. It could use a 
+cleanup.
+
+== For Developers
+=== Building via IntelliJ IDEA
+* Make sure you have the Lombok Intellij plugins installed (_Preferences_ | _Plugins_ | _Browse repositories..._ search
+for _Lombok_ install and restart IDEA)
+* Click on _File | Open_ and navigate to the top-level _build.gradle_ file and select it.
+* Once the project loads, open the _Preferences_ and click on _Build, Execution, Deployment | Compiler | Annotation
+Processors_. Make sure _Enable annotation processing_ is checked, that _Obtain processors from project
+classpath_ is selected and that _Module content root_ is selected.
+* While in _Preferences_, click on  _Build, Execution, Deployment | Build Tools | Gradle | Runner_. Make sure
+_Delegate IDE build/run actions to Gradle_ is selected.
+
+.Config Coding Style in Intellij IDEA
+* Preference->Editor->Code Style->Java
+* Click config icon to the right of "Scheme:".
+* Import Scheme -> Intellij IDEA code style XML
+* Open config/checkstyle/intellij-java-google-style.xml
+
+

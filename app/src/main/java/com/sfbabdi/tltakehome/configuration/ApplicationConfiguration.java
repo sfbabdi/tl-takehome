@@ -1,5 +1,7 @@
 package com.sfbabdi.tltakehome.configuration;
 
+import com.sfbabdi.tltakehome.ConsolePixelCheckReporter;
+import com.sfbabdi.tltakehome.PixelCheckReporter;
 import com.sfbabdi.tltakehome.model.PixelCheckResult;
 import java.time.Clock;
 import java.util.Random;
@@ -54,6 +56,12 @@ public class ApplicationConfiguration {
   public CompletionService<PixelCheckResult> configureCompletionService(ThreadPoolExecutor executor) {
     return new ExecutorCompletionService<>(executor);
   }
+
+  @Bean
+  public PixelCheckReporter configurePixelCheckReporter() {
+    return new ConsolePixelCheckReporter();
+  }
+
 }
 
 
