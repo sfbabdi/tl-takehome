@@ -12,12 +12,17 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
 
 @Slf4j
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
 @SpringBootApplication
 public class App implements CommandLineRunner {
 
+    private final ThreadPoolExecutor executor;
+    private final CompletionService<PixelCheckResult> completionService;
     private final PixelPreparer preparer;
     private final PixelChecker checker;
 
@@ -44,9 +49,18 @@ public class App implements CommandLineRunner {
 
         assert pixelCheckEntries != null;
 
-        // We could parallelize the checking with thread pool and so. But maybe just relax and get some coffee?
         List<PixelCheckResult> pixelCheckResults = new ArrayList<>(pixelCheckEntries.size());
-        pixelCheckEntries.forEach(e -> pixelCheckResults.add(checker.check(e)));
+        pixelCheckEntries.forEach(e -> {
+            completionService.submit(() -> checker.check(e));
+        });
+
+        int received = 0;
+        while (received < pixelCheckEntries.size()) {
+            Future<PixelCheckResult> resultFuture = completionService.take();
+            pixelCheckResults.add(resultFuture.get());
+            log.info("Executor poolSize:{}, queueSize:{}", executor.getPoolSize(), executor.getQueue().size());
+            received++;
+        }
 
         ConsolePixelCheckReporter reporter =
                 new ConsolePixelCheckReporter(pixelCheckResults, preparer.getMetrics(), checker.getMetrics());

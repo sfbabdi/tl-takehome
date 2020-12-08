@@ -61,15 +61,15 @@ public class ConsolePixelCheckReporter {
             if (r.getResultStatus() == PixelCheckResult.ResultStatus.ERROR) {
                 errorDetail.append("TacticId:");
                 errorDetail.append(r.getTacticId());
-                errorDetail.append("URL:");
+                errorDetail.append(" URL:");
                 errorDetail.append(r.getUrl());
                 errorDetail.append('\n');
             } else if (r.getHttpCode().isError()) {
                 failedDetail.append("TacticId:");
                 failedDetail.append(r.getTacticId());
-                failedDetail.append("HttpCode:");
+                failedDetail.append(" HttpCode:");
                 failedDetail.append(r.getHttpCode());
-                failedDetail.append("URL:");
+                failedDetail.append(" URL:");
                 failedDetail.append(r.getUrl());
                 failedDetail.append('\n');
             }
