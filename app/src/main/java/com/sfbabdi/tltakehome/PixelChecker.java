@@ -10,13 +10,16 @@ import reactor.core.publisher.Mono;
 
 import java.util.Optional;
 
+/**
+ * Check validness of pixel url.
+ */
 @Slf4j
 @AllArgsConstructor
 @Component
 public class PixelChecker {
     private final WebClient client;
 
-    public Optional<Boolean> check(String urlStr) {
+    public Optional<HttpStatus> check(String urlStr) {
         log.trace("Checking pixel:{}", urlStr);
 
         try {
@@ -27,9 +30,8 @@ public class PixelChecker {
                     .block();
 
             HttpStatus statusCode = response.statusCode();
-            boolean result = !statusCode.isError();
-            log.trace("Url:{}, StatusCode:{}, result:{}", urlStr, statusCode, result);
-            return Optional.of(result);
+            log.trace("Url:{}, StatusCode:{}", urlStr, statusCode);
+            return Optional.of(statusCode);
         } catch (Exception e) {
             log.debug("Unable to process url:{}", urlStr, e);
             return Optional.empty();

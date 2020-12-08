@@ -7,6 +7,7 @@ import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.IOException;
@@ -39,10 +40,10 @@ public class PixelCheckerTest {
         HttpUrl url = webServer.url("/testCheck200");
 
         PixelChecker dut = new PixelChecker(client);
-        Optional<Boolean> result = dut.check(url.toString());
+        Optional<HttpStatus> result = dut.check(url.toString());
 
         assertTrue(result.isPresent());
-        assertTrue(result.get());
+        assertEquals(HttpStatus.OK, result.get());
 
         RecordedRequest recordedRequest = webServer.takeRequest();
         assertEquals("GET", recordedRequest.getMethod());
@@ -55,16 +56,16 @@ public class PixelCheckerTest {
         HttpUrl url = webServer.url("/testCheck500");
 
         PixelChecker dut = new PixelChecker(client);
-        Optional<Boolean> result = dut.check(url.toString());
+        Optional<HttpStatus> result = dut.check(url.toString());
 
         assertTrue(result.isPresent());
-        assertFalse(result.get());
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, result.get());
     }
 
     @Test
     public void testCheckException() {
         PixelChecker dut = new PixelChecker(client);
-        Optional<Boolean> result = dut.check("gibberish");
+        Optional<HttpStatus> result = dut.check("gibberish");
 
         assertFalse(result.isPresent());
     }

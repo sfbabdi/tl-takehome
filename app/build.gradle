@@ -43,6 +43,7 @@ dependencies {
   implementation 'com.google.guava:guava'
   implementation 'joda-time:joda-time'
   implementation 'org.apache.commons:commons-lang3'
+  implementation 'commons-validator:commons-validator'
   testImplementation 'junit:junit'
   testImplementation 'org.mockito:mockito-core'
   testImplementation 'com.squareup.okhttp3:okhttp'
