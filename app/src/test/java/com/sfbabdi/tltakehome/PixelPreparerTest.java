@@ -1,6 +1,11 @@
 package com.sfbabdi.tltakehome;
 
+import com.sfbabdi.tltakehome.model.PixelCheckEntry;
+import com.sfbabdi.tltakehome.metrics.PixelPreparerMetrics;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.apache.commons.validator.routines.UrlValidator;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -21,35 +26,53 @@ public class PixelPreparerTest {
 
     // 2020-01-01 00:00:00 UTC
     private static final long MOCK_NOW = 1577836800;
+    private static final int MOCK_RANDOM_INT = 1776;
+
     @Mock
     private Clock clock;
-
-    private UrlValidator validator;
-
     @Mock
     private Random random;
+
+    private PixelPreparerMetrics metrics;
+    private UrlValidator validator;
 
     @Before
     public void setup() {
         Mockito.when(clock.millis()).thenReturn(MOCK_NOW);
         String[] schemes = {"http", "https"};
-        Mockito.when(random.nextInt()).thenReturn(1776);
+        Mockito.when(random.nextInt()).thenReturn(MOCK_RANDOM_INT);
         validator = new UrlValidator(schemes);
+        MeterRegistry registry = new SimpleMeterRegistry();
+        metrics = new PixelPreparerMetrics(registry);
+    }
+
+    @After
+    public void tearDown() {
+        metrics = null;
+        validator = null;
     }
 
     @Test
     public void testSuccess() throws FileNotFoundException {
         final String input = "src/test/resources/tactic.csv";
+        final int expectedTotalCount = 24907;
         final int expectedValidUrlCount = 17742;
-        PixelPreparer dut = new PixelPreparer(clock, random, validator);
-        List<String> result = dut.processFile(input);
+        final int expectedInvalidUrlCount = 5;
+        final int expectedEmptyUrlCount = 7160;
+        PixelPreparer dut = new PixelPreparer(clock, random, validator, metrics);
+        List<PixelCheckEntry> result = dut.processFile(input);
         assertEquals(expectedValidUrlCount, result.size());
+
+        assertEquals(expectedTotalCount, (int)metrics.getTotalProcessed().count());
+        assertEquals(expectedEmptyUrlCount, (int)metrics.getNoImpressionPixelCount().count());
+        assertEquals(expectedInvalidUrlCount, (int)metrics.getInvalidImpressionPixelCount().count());
+        assertEquals(expectedValidUrlCount, (int)metrics.getValidImpressionPixelCount().count());
     }
 
     @Test(expected = FileNotFoundException.class)
     public void testFileNotFound() throws FileNotFoundException {
-        PixelPreparer dut = new PixelPreparer(clock, random, validator);
-        List<String> result = dut.processFile("???");
+        PixelPreparer dut = new PixelPreparer(clock, random, validator, metrics);
+        dut.processFile("???");
     }
 
     @Test
@@ -108,7 +131,7 @@ public class PixelPreparerTest {
     }
 
     private void testSanitize(String urlRaw, boolean isResultValid, String expectedResult) {
-        PixelPreparer preparer = new PixelPreparer(clock, random, validator);
+        PixelPreparer preparer = new PixelPreparer(clock, random, validator, metrics);
         Optional<String> s = preparer.sanitizeUrl(urlRaw);
         assertEquals(isResultValid, s.isPresent());
         s.ifPresent(value -> assertEquals(expectedResult, value));

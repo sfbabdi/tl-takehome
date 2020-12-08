@@ -1,14 +1,16 @@
 package com.sfbabdi.tltakehome;
 
+import com.sfbabdi.tltakehome.model.PixelCheckEntry;
+import com.sfbabdi.tltakehome.model.PixelCheckResult;
+import com.sfbabdi.tltakehome.metrics.PixelCheckMetrics;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
-
-import java.util.Optional;
 
 /**
  * Check validness of pixel url.
@@ -18,23 +20,44 @@ import java.util.Optional;
 @Component
 public class PixelChecker {
     private final WebClient client;
+    @Getter
+    private final PixelCheckMetrics metrics;
 
-    public Optional<HttpStatus> check(String urlStr) {
-        log.trace("Checking pixel:{}", urlStr);
+    public PixelCheckResult check(PixelCheckEntry entry) {
+        log.trace("Checking pixel:{}", entry.getUrl());
+        metrics.getTotalCount().increment();
 
         try {
             ClientResponse response = client
                     .get()
-                    .uri(urlStr)
+                    .uri(entry.getUrl())
                     .exchangeToMono(Mono::just)
                     .block();
 
+            assert response != null;
             HttpStatus statusCode = response.statusCode();
-            log.trace("Url:{}, StatusCode:{}", urlStr, statusCode);
-            return Optional.of(statusCode);
+            log.trace("TacticId: {}, Url:{} - StatusCode:{}", entry.getTacticId(), entry.getUrl(), statusCode);
+
+            if (statusCode.isError()) {
+                metrics.getFailCount().increment();
+            } else {
+                metrics.getPassCount().increment();
+            }
+
+            return new PixelCheckResult(
+                    entry.getTacticId(),
+                    entry.getUrl(),
+                    statusCode,
+                    PixelCheckResult.ResultStatus.VALID);
         } catch (Exception e) {
-            log.debug("Unable to process url:{}", urlStr, e);
-            return Optional.empty();
+            log.debug("TacticId: {}, Url: {} - Error during processing", entry.getUrl(), e);
+            metrics.getErrorCount().increment();
         }
+        return new PixelCheckResult(
+                entry.getTacticId(),
+                entry.getUrl(),
+                // in case of error the status code is meaningless, just pick one
+                HttpStatus.I_AM_A_TEAPOT,
+                PixelCheckResult.ResultStatus.ERROR);
     }
 }

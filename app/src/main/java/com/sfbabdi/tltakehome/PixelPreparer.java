@@ -1,6 +1,9 @@
 package com.sfbabdi.tltakehome;
 
+import com.sfbabdi.tltakehome.model.PixelCheckEntry;
+import com.sfbabdi.tltakehome.metrics.PixelPreparerMetrics;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.validator.routines.UrlValidator;
 import org.springframework.stereotype.Component;
@@ -30,8 +33,10 @@ public class PixelPreparer {
     private final Clock clock;
     private final Random random;
     private final UrlValidator validator;
+    @Getter
+    private final PixelPreparerMetrics metrics;
 
-    public List<String> processFile(String fileName) throws FileNotFoundException {
+    public List<PixelCheckEntry> processFile(String fileName) throws FileNotFoundException {
         List<List<String>> inputCsv = new ArrayList<>();
         Scanner scanner = new Scanner(new File(fileName));
         while (scanner.hasNextLine()) {
@@ -43,27 +48,31 @@ public class PixelPreparer {
             inputCsv.add(processLine(line));
         }
 
-        List<String> sanitizedUrls = new ArrayList<>();
+        List<PixelCheckEntry> pixelCheckResultEntryList = new ArrayList<>();
         for (List<String> line : inputCsv) {
-            String tactic_id = line.get(TACTIC_ID_FIELD);
+            metrics.getTotalProcessed().increment();
+
+            String tacticId = line.get(TACTIC_ID_FIELD);
             String impressionPixelJson = line.get(IMPRESSION_PIXEL_FIELD);
 
             // lots of entries with NULL or []. Straight ignore.
             if (impressionPixelJson.equalsIgnoreCase(IMPRESSION_PIXEL_NULL)
                     || impressionPixelJson.equals(IMPRESSION_PIXEL_EMPTY)) {
+                metrics.getNoImpressionPixelCount().increment();
                 continue;
             }
 
-            log.trace("Sanitizing tactic_id:{} url: {}", tactic_id, impressionPixelJson);
-            Optional<String> result = sanitizeUrl(impressionPixelJson);
-            if (result.isPresent()) {
-                sanitizedUrls.add(result.get());
+            log.trace("Sanitizing tacticId:{} url: {}", tacticId, impressionPixelJson);
+            Optional<String> sanitizedUrl = sanitizeUrl(impressionPixelJson);
+            if (sanitizedUrl.isPresent()) {
+                pixelCheckResultEntryList.add(new PixelCheckEntry(tacticId, sanitizedUrl.get()));
+                metrics.getValidImpressionPixelCount().increment();
             } else {
-                log.debug("Tactic_Id: {} has invalid URL: {}", tactic_id, impressionPixelJson);
-                //TODO: count invalid url for stats
+                log.debug("Tactic_Id: {} has invalid URL: {}", tacticId, impressionPixelJson);
+                metrics.getInvalidImpressionPixelCount().increment();
             }
         }
-        return sanitizedUrls;
+        return pixelCheckResultEntryList;
     }
 
     private List<String> processLine(String line) {
