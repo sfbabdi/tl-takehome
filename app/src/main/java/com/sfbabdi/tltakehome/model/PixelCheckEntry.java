@@ -5,8 +5,9 @@ import lombok.Getter;
 
 @AllArgsConstructor
 public class PixelCheckEntry {
-    @Getter
-    private final String tacticId;
-    @Getter
-    private final String url;
+
+  @Getter
+  private final String tacticId;
+  @Getter
+  private final String url;
 }

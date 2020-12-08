@@ -1,8 +1,8 @@
 package com.sfbabdi.tltakehome;
 
+import com.sfbabdi.tltakehome.metrics.PixelCheckMetrics;
 import com.sfbabdi.tltakehome.model.PixelCheckEntry;
 import com.sfbabdi.tltakehome.model.PixelCheckResult;
-import com.sfbabdi.tltakehome.metrics.PixelCheckMetrics;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -19,45 +19,46 @@ import reactor.core.publisher.Mono;
 @AllArgsConstructor
 @Component
 public class PixelChecker {
-    private final WebClient client;
-    @Getter
-    private final PixelCheckMetrics metrics;
 
-    public PixelCheckResult check(PixelCheckEntry entry) {
-        log.trace("Checking pixel:{}", entry.getUrl());
-        metrics.getTotalCount().increment();
+  private final WebClient client;
+  @Getter
+  private final PixelCheckMetrics metrics;
 
-        try {
-            ClientResponse response = client
-                    .get()
-                    .uri(entry.getUrl())
-                    .exchangeToMono(Mono::just)
-                    .block();
+  public PixelCheckResult check(PixelCheckEntry entry) {
+    log.trace("Checking pixel:{}", entry.getUrl());
+    metrics.getTotalCount().increment();
 
-            assert response != null;
-            HttpStatus statusCode = response.statusCode();
-            log.trace("TacticId: {}, Url:{} - StatusCode:{}", entry.getTacticId(), entry.getUrl(), statusCode);
+    try {
+      ClientResponse response = client
+          .get()
+          .uri(entry.getUrl())
+          .exchangeToMono(Mono::just)
+          .block();
 
-            if (statusCode.isError()) {
-                metrics.getFailCount().increment();
-            } else {
-                metrics.getPassCount().increment();
-            }
+      assert response != null;
+      HttpStatus statusCode = response.statusCode();
+      log.trace("TacticId: {}, Url:{} - StatusCode:{}", entry.getTacticId(), entry.getUrl(), statusCode);
 
-            return new PixelCheckResult(
-                    entry.getTacticId(),
-                    entry.getUrl(),
-                    statusCode,
-                    PixelCheckResult.ResultStatus.VALID);
-        } catch (Exception e) {
-            log.debug("TacticId: {}, Url: {} - Error during processing", entry.getUrl(), e);
-            metrics.getErrorCount().increment();
-        }
-        return new PixelCheckResult(
-                entry.getTacticId(),
-                entry.getUrl(),
-                // in case of error the status code is meaningless, just pick one
-                HttpStatus.I_AM_A_TEAPOT,
-                PixelCheckResult.ResultStatus.ERROR);
+      if (statusCode.isError()) {
+        metrics.getFailCount().increment();
+      } else {
+        metrics.getPassCount().increment();
+      }
+
+      return new PixelCheckResult(
+          entry.getTacticId(),
+          entry.getUrl(),
+          statusCode,
+          PixelCheckResult.ResultStatus.VALID);
+    } catch (Exception e) {
+      log.debug("TacticId: {}, Url: {} - Error during processing", entry.getUrl(), e);
+      metrics.getErrorCount().increment();
     }
+    return new PixelCheckResult(
+        entry.getTacticId(),
+        entry.getUrl(),
+        // in case of error the status code is meaningless, just pick one
+        HttpStatus.I_AM_A_TEAPOT,
+        PixelCheckResult.ResultStatus.ERROR);
+  }
 }

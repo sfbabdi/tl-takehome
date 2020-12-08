@@ -14,7 +14,7 @@ buildscript {
   }
   dependencies {
     classpath "org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}"
-    classpath 'gradle.plugin.com.github.spotbugs:spotbugs-gradle-plugin:2.0.0'
+    classpath "gradle.plugin.com.github.spotbugs.snom:spotbugs-gradle-plugin:4.6.0"
     classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.7.1'
     classpath 'gradle.plugin.com.palantir.gradle.docker:gradle-docker:0.22.1'
   }
@@ -22,7 +22,7 @@ buildscript {
     resolutionStrategy {
       // Palantir gradle-docker compiles against guava 18.0.
       // Must force guava version to latest so that spotbugs will work.
-      force 'com.google.guava:guava:28.0-jre'
+      force 'com.google.guava:guava:30.0-jre'
     }
   }
 }
@@ -84,8 +84,6 @@ subprojects {
   targetCompatibility = 1.8
 
   spotbugs {
-    toolVersion = '3.1.12'
-    sourceSets = [ sourceSets.main ]
     ignoreFailures = false
     reportsDir = file("$project.rootProject.buildDir/spotbugsReport")
     effort = "max"
@@ -93,7 +91,7 @@ subprojects {
     reportLevel = "high"
   }
 
-  tasks.withType(com.github.spotbugs.SpotBugsTask) {
+  spotbugsMain {
     reports {
       xml.enabled false 
       html.enabled true

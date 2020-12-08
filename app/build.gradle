@@ -5,138 +5,138 @@ apply plugin: 'com.palantir.docker'
 apply plugin: VersionNumberPlugin
 
 configurations {
-  // avoid conflict with log4j-slf4j-impl
-  compile.exclude module: 'spring-boot-starter-logging'
+    // avoid conflict with log4j-slf4j-impl
+    compile.exclude module: 'spring-boot-starter-logging'
 
-  cucumberImplementation.extendsFrom testImplementation
-  cucumberRuntime {
-    extendsFrom testRuntime
-  }
-  cucumberCompileOnly {
-    extendsFrom testCompileOnly, compileOnly
-  }
-  cucumberAnnotationProcessor.extendsFrom testAnnotationProcessor
+    cucumberImplementation.extendsFrom testImplementation
+    cucumberRuntime {
+        extendsFrom testRuntime
+    }
+    cucumberCompileOnly {
+        extendsFrom testCompileOnly, compileOnly
+    }
+    cucumberAnnotationProcessor.extendsFrom testAnnotationProcessor
 }
 
 sourceSets {
-  cucumber {
-    java {
-      compileClasspath += main.output + test.output
-      runtimeClasspath += main.output + test.output
-      srcDir file('src/cucumber/java')
+    cucumber {
+        java {
+            compileClasspath += main.output + test.output
+            runtimeClasspath += main.output + test.output
+            srcDir file('src/cucumber/java')
+        }
     }
-  }
 }
 
 dependencies {
-  annotationProcessor 'org.projectlombok:lombok'
-  compileOnly 'org.projectlombok:lombok'
-  runtime 'org.springframework.boot:spring-boot-devtools'
-  implementation 'org.springframework.boot:spring-boot-starter'
-  implementation 'org.springframework.boot:spring-boot-starter-webflux'
-  implementation 'org.springframework.boot:spring-boot-starter-log4j2'
-  implementation 'org.springframework.boot:spring-boot-starter-validation'
-  implementation 'org.springframework.boot:spring-boot-starter-actuator'
-  implementation 'org.projectreactor:reactor-spring'
-  implementation 'io.micrometer:micrometer-registry-cloudwatch'
-  implementation 'io.micrometer:micrometer-registry-statsd'
-  implementation 'com.google.guava:guava'
-  implementation 'joda-time:joda-time'
-  implementation 'org.apache.commons:commons-lang3'
-  implementation 'commons-validator:commons-validator'
-  testImplementation 'junit:junit'
-  testImplementation 'org.mockito:mockito-core'
-  testImplementation 'com.squareup.okhttp3:okhttp'
-  testImplementation 'com.squareup.okhttp3:mockwebserver'
-  cucumberAnnotationProcessor 'org.projectlombok:lombok'
-  cucumberCompileOnly 'org.projectlombok:lombok'
-  cucumberImplementation 'io.cucumber:cucumber-java'
-  cucumberImplementation 'io.cucumber:cucumber-junit'
-  cucumberImplementation 'org.apache.kafka:kafka-clients'
-  cucumberImplementation 'org.apache.commons:commons-lang3'
-  cucumberImplementation 'org.apache.logging.log4j:log4j-slf4j-impl'
+    annotationProcessor 'org.projectlombok:lombok'
+    compileOnly 'org.projectlombok:lombok'
+    runtime 'org.springframework.boot:spring-boot-devtools'
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'org.springframework.boot:spring-boot-starter-log4j2'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.projectreactor:reactor-spring'
+    implementation 'io.micrometer:micrometer-registry-cloudwatch'
+    implementation 'io.micrometer:micrometer-registry-statsd'
+    implementation 'com.google.guava:guava'
+    implementation 'joda-time:joda-time'
+    implementation 'org.apache.commons:commons-lang3'
+    implementation 'commons-validator:commons-validator'
+    testImplementation 'junit:junit'
+    testImplementation 'org.mockito:mockito-core'
+    testImplementation 'com.squareup.okhttp3:okhttp'
+    testImplementation 'com.squareup.okhttp3:mockwebserver'
+    cucumberAnnotationProcessor 'org.projectlombok:lombok'
+    cucumberCompileOnly 'org.projectlombok:lombok'
+    cucumberImplementation 'io.cucumber:cucumber-java'
+    cucumberImplementation 'io.cucumber:cucumber-junit'
+    cucumberImplementation 'org.apache.kafka:kafka-clients'
+    cucumberImplementation 'org.apache.commons:commons-lang3'
+    cucumberImplementation 'org.apache.logging.log4j:log4j-slf4j-impl'
 }
 
 jar {
-  enabled = true
+    enabled = true
 }
 
 bootJar {
-  classifier = 'boot'
+    classifier = 'boot'
 }
 
 task('dockerPrepareDockerfile', type: Copy) {
-  from('src/main/docker') {
-    include 'Dockerfile'
-  }
-  into new File(project.buildDir, 'dockerAssemble')
-  expand([project: project])
+    from('src/main/docker') {
+        include 'Dockerfile'
+    }
+    into new File(project.buildDir, 'dockerAssemble')
+    expand([project: project])
 }
 
 task dockerVersion {
-  doLast {
-    new File(project.buildDir, 'dockerVersion').text = project.version
-  }
+    doLast {
+        new File(project.buildDir, 'dockerVersion').text = project.version
+    }
 }
 
 docker {
-  name "${awsAccountId}.dkr.ecr.${awsRegion}.amazonaws.com/calampgateway"
-  tags project.version
-  dockerfile new File(project.buildDir, 'dockerAssemble/Dockerfile')
-  files tasks.bootJar.outputs, 'src/main/docker/run-app.sh'
+    name "${awsAccountId}.dkr.ecr.${awsRegion}.amazonaws.com/calampgateway"
+    tags project.version
+    dockerfile new File(project.buildDir, 'dockerAssemble/Dockerfile')
+    files tasks.bootJar.outputs, 'src/main/docker/run-app.sh'
 }
 
 tasks.dockerPrepare.dependsOn(['bootJar', 'dockerPrepareDockerfile'])
 
 def dockerTagAllTask = task('dockerTagAll') {
-  group 'Docker'
-  description 'Run all \'dockerTag\' tasks'
+    group 'Docker'
+    description 'Run all \'dockerTag\' tasks'
 }
 def dockerPushAllTask = task('dockerPushAll') {
-  group 'Docker'
-  description 'Run all \'dockerPush\' tasks'
+    group 'Docker'
+    description 'Run all \'dockerPush\' tasks'
 }
 
 afterEvaluate {
-  tasks
-    .findAll { task -> task.name != 'dockerTagAll' && task.name.startsWith('dockerTag') }
-    .each { task -> dockerTagAllTask.dependsOn(task) }
+    tasks
+            .findAll { task -> task.name != 'dockerTagAll' && task.name.startsWith('dockerTag') }
+            .each { task -> dockerTagAllTask.dependsOn(task) }
 
-  tasks
-    .findAll { task -> task.name != 'dockerPushAll' && task.name.startsWith('dockerPush') }
-    .each { task -> dockerPushAllTask.dependsOn(task) }
+    tasks
+            .findAll { task -> task.name != 'dockerPushAll' && task.name.startsWith('dockerPush') }
+            .each { task -> dockerPushAllTask.dependsOn(task) }
 }
 
 def testCoverageExcludeClasses = [
-  'com.sfbabdi.tltakehome.configuration.*',
-  'com.sfbabdi.tltakehome.App',
+        'com.sfbabdi.tltakehome.configuration.*',
+        'com.sfbabdi.tltakehome.ConsolePixelCheckReporter',
 ]
 
 jacocoTestCoverageVerification {
-  violationRules {
-    rule {
-      element = 'CLASS'
-      excludes = testCoverageExcludeClasses
-      limit {
-        minimum = 0.8
-      }
+    violationRules {
+        rule {
+            element = 'CLASS'
+            excludes = testCoverageExcludeClasses
+            limit {
+                minimum = 0.8
+            }
+        }
     }
-  }
 }
 
 task cucumber(type: Test) {
-  testClassesDirs = sourceSets.cucumber.output.classesDirs
-  classpath = sourceSets.cucumber.runtimeClasspath
+    testClassesDirs = sourceSets.cucumber.output.classesDirs
+    classpath = sourceSets.cucumber.runtimeClasspath
 }
 
 cucumber {
-  systemProperty "cucumber.options", System.getProperty("cucumber.options")
+    systemProperty "cucumber.options", System.getProperty("cucumber.options")
 }
 
 sonarqube {
-  properties {
-    property "sonar.sources", ["src/main", "src/cucumber"]
-    property "sonar.coverage.exclusions", "src/cucumber/**/*"
-  }
+    properties {
+        property "sonar.sources", ["src/main", "src/cucumber"]
+        property "sonar.coverage.exclusions", "src/cucumber/**/*"
+    }
 }
 
