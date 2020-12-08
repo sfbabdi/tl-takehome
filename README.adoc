@@ -68,7 +68,7 @@ Number of error while getting response: 1400
 * `PixelChecker` - Checks URLs
 * `PixelCheckReporter` - Generate report.
 
-=== Implemntation Thoughts
+=== Implemntation Notes
 * `impression_pixel_json` field is really dirty. If this tool is to be used in 
 a real setting, then we need to improve pixel scraping from html. Adding more 
 manual clean up is going to be a lost fight from the start.
@@ -84,6 +84,8 @@ expansion.
 test it if it's production code.
 * `build.gradle` files have some unnecessary stuff in there. It could use a 
 cleanup.
+* Code readability and simplicity is always prioritized over performance, 
+unless performance is necessary to keep sanity (i.e. concurrent pixel checking)
 
 == For Developers
 === Building via IntelliJ IDEA
