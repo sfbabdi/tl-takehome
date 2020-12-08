@@ -39,7 +39,10 @@ public class AppTest {
   ConfigurableApplicationContext context;
   // Use annotation to avoid the problem of instantiate the generic type captor
   @Captor
-  ArgumentCaptor<List<PixelCheckResult>> checkResultCaptor;
+  ArgumentCaptor<List<PixelCheckResult>> reportFailedDetailCaptor;
+  @Captor
+  ArgumentCaptor<List<PixelCheckResult>> reportErrorDetailCaptor;
+
   @Mock
   private PixelPreparer preparer;
   @Mock
@@ -114,9 +117,13 @@ public class AppTest {
     verify(reporter, times(1)).reportPrepareMetrics(preparerMetricsCaptor.capture());
     assertSame(pixelPreparerMetrics, preparerMetricsCaptor.getValue());
 
-    verify(reporter, times(1)).reportFailedDetail(checkResultCaptor.capture());
-    Object[] capturedCheckResultArr = checkResultCaptor.getValue().toArray();
-    assertArrayEquals(checkResults.toArray(), capturedCheckResultArr);
+    verify(reporter, times(1)).reportFailedDetail(reportFailedDetailCaptor.capture());
+    Object[] reportFailedCaptorValueArr = reportFailedDetailCaptor.getValue().toArray();
+    assertArrayEquals(checkResults.toArray(), reportFailedCaptorValueArr);
+
+    verify(reporter, times(1)).reportErrorDetail(reportErrorDetailCaptor.capture());
+    Object[] reportErrorCaptorValueArr = reportErrorDetailCaptor.getValue().toArray();
+    assertArrayEquals(checkResults.toArray(), reportErrorCaptorValueArr);
   }
 
   @Test

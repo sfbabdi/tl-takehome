@@ -49,25 +49,22 @@ public class ConsolePixelCheckReporter implements PixelCheckReporter {
 
   @Override
   public void reportFailedDetail(List<PixelCheckResult> results) {
-    StringBuilder errorDetail = new StringBuilder();
-    StringBuilder failedDetail = new StringBuilder();
+    log.info("Failed Pixel (4xx/5xx) Detail Report");
     results.forEach(r -> {
-      if (r.getResultStatus() == PixelCheckResult.ResultStatus.ERROR) {
-        errorDetail.append("TacticId:");
-        errorDetail.append(r.getTacticId());
-        errorDetail.append(",URL:");
-        errorDetail.append(r.getUrl());
-        errorDetail.append('\n');
-      } else if (r.getHttpCode().isError()) {
-        failedDetail.append("TacticId:");
-        failedDetail.append(r.getTacticId());
-        failedDetail.append(",HttpCode:");
-        failedDetail.append(r.getHttpCode());
-        failedDetail.append(",URL:");
-        failedDetail.append(r.getUrl());
-        failedDetail.append('\n');
+      if (r.getResultStatus() == PixelCheckResult.ResultStatus.VALID
+          && r.getHttpCode().isError()) {
+        log.info("TacticId:{},HttpCode:{},URL:{}", r.getTacticId(), r.getHttpCode(), r.getUrl());
       }
     });
-    log.info("Failed Detail:\n" + failedDetail.toString() + '\n' + "Error Detail:\n" + errorDetail.toString() + '\n');
+  }
+
+  @Override
+  public void reportErrorDetail(List<PixelCheckResult> results) {
+    log.info("Error Pixel Detail Report");
+    results.forEach(r -> {
+      if (r.getResultStatus() == PixelCheckResult.ResultStatus.ERROR) {
+        log.info("TacticId:{},URL:{}", r.getTacticId(), r.getUrl());
+      }
+    });
   }
 }

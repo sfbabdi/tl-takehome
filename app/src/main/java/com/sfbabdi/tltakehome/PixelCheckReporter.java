@@ -12,4 +12,6 @@ public interface PixelCheckReporter {
   void reportCheckMetrics(PixelCheckMetrics pixelCheckMetrics);
 
   void reportFailedDetail(List<PixelCheckResult> results);
+
+  void reportErrorDetail(List<PixelCheckResult> results);
 }

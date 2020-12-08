@@ -63,13 +63,17 @@ public class App implements CommandLineRunner {
     while (received < pixelCheckEntries.size()) {
       Future<PixelCheckResult> resultFuture = completionService.take();
       pixelCheckResults.add(resultFuture.get());
-      if (received % logInterval == 0) {
-        log.info("Executor queueSize:{}", executor.getQueue().size());
-      }
       received++;
+      int queueSize = executor.getQueue().size();
+      if (received % logInterval == 0 || queueSize < 50) {
+        log.info("URLs in queue:{}, finished:{}", queueSize, received);
+      }
     }
 
+    log.info("Finished checking. Generating report.");
+
     reporter.reportFailedDetail(pixelCheckResults);
+    reporter.reportErrorDetail(pixelCheckResults);
     reporter.reportPrepareMetrics(preparer.getMetrics());
     reporter.reportCheckMetrics(checker.getMetrics());
 
